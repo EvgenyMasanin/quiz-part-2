@@ -5,15 +5,57 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Тест — 2 часть</title>
 <style>
-:root{--bg:#f4f5f7;--card:#fff;--text:#1c1d21;--muted:#6b7080;--line:#dfe2e8;--accent:#2f6fed;--ok:#1b8a4a;--ok-bg:#e6f6ec;--bad:#c93a3a;--bad-bg:#fdecec}
-@media (prefers-color-scheme:dark){:root{--bg:#121316;--card:#1d1f24;--text:#eceef3;--muted:#9aa0ae;--line:#30333b;--accent:#5b8ef5;--ok:#5ccf8b;--ok-bg:#15301f;--bad:#f27b7b;--bad-bg:#3a1c1c}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:17px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
-main{max-width:640px;margin:0 auto;padding:12px 16px calc(100px + env(safe-area-inset-bottom))}
-.head{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:15px}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+button{font:inherit;cursor:pointer}
+button:disabled{opacity:.45;cursor:default}
+main{max-width:640px;margin:0 auto;padding:12px 16px 32px}
+.exam .c,.cards .x{display:none!important}
+
+/* ===== Режим «как на экзамене» (основной) ===== */
+.exam{background:#fff;color:#1d2125;font-size:15px;line-height:1.5}
+header{position:sticky;top:0;z-index:1;background:#fff;padding:14px 16px;font-size:20px;box-shadow:0 2px 4px rgba(0,0,0,.08)}
+.xstats{font-size:14px;color:#495057;margin:4px 0 16px}
+.info{background:#f8f9fa;border:1px solid #dee2e6;border-radius:4px;padding:10px 12px;margin-bottom:20px;font-size:14px}
+.info b{font-size:16px}
+.exam .box{background:#e7f3f5;border:1px solid #b8dce2;border-radius:4px;padding:20px;color:#001a1e}
+.exam h1{font-size:15px;font-weight:400;margin:0}
+.exam #hint{margin:16px 0 8px}
+.exam #options{margin-left:6px}
+.exam label{display:flex;gap:10px;align-items:flex-start;padding:4px 0;cursor:pointer}
+.exam label input{flex:none;width:16px;height:16px;margin:4px 0 0}
+.exam label span{flex:1}
+.exam label.ok.picked::after,.exam label.bad::after{flex:none;margin-left:12px;font-weight:700}
+.exam label.ok.picked::after{content:"✓";color:#357a32}
+.exam label.bad::after{content:"✗";color:#ca3120}
+.btn{border:0;border-radius:4px;padding:7px 14px;color:#fff;background:#6c757d}
+.exam #check{margin-top:12px}
+.exam #result{background:#fcefdc;border:1px solid #fbe6ca;color:#8e662e;border-radius:4px;padding:20px;margin-top:16px}
+.exam #result p{margin:8px 0 0;font-weight:600}
+.pager{display:flex;margin-top:28px}
+.pager .btn{flex:1;padding:8px 4px;font-size:14px}
+.pager .btn+.btn{background:#13306d}
+.qnav{margin-top:32px}
+.qnav h2{font-size:20px;font-weight:400;margin:0 0 4px}
+#grid{display:flex;flex-wrap:wrap;gap:6px}
+.sec{flex-basis:100%;margin-top:10px;font-size:14px}
+.qn{position:relative;width:32px;height:42px;padding:0 0 12px;border:1px solid #8f959e;border-radius:4px;background:#fff;color:#1d2125;font-size:13px;overflow:hidden}
+.qn::after{content:"";position:absolute;left:0;right:0;bottom:0;height:12px;border-top:1px solid #8f959e;font-size:9px;line-height:11px;color:#fff}
+.qn.right::after{content:"✓";background:#357a32}
+.qn.wrong::after{content:"✗";background:#ca3120}
+.qn.cur{border:2px solid #1d2125}
+.actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;margin-top:24px}
+.link{background:none;border:0;padding:6px 0;color:#0f6cbf}
+
+/* ===== Режим «карточки» (альтернативный) ===== */
+.cards{--bg:#f4f5f7;--card:#fff;--text:#1c1d21;--muted:#6b7080;--line:#dfe2e8;--accent:#2f6fed;--ok:#1b8a4a;--ok-bg:#e6f6ec;--bad:#c93a3a;--bad-bg:#fdecec;background:var(--bg);color:var(--text);font-size:17px;line-height:1.45}
+@media (prefers-color-scheme:dark){.cards{--bg:#121316;--card:#1d1f24;--text:#eceef3;--muted:#9aa0ae;--line:#30333b;--accent:#5b8ef5;--ok:#5ccf8b;--ok-bg:#15301f;--bad:#f27b7b;--bad-bg:#3a1c1c}}
+.cards main{padding-bottom:calc(100px + env(safe-area-inset-bottom))}
+.head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0 12px;font-size:15px}
 #count{font-weight:600;font-variant-numeric:tabular-nums}
-#restart{height:auto;padding:6px 0;background:none;color:var(--accent);font-size:15px}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0 8px;text-align:center}
+.head .links{display:flex;gap:14px}
+.cards .link{color:var(--accent);font-size:14px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0;text-align:center}
 .stats div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px 2px}
 .stats b{display:block;font-size:18px;font-variant-numeric:tabular-nums}
 .stats small{font-size:11px;color:var(--muted)}
@@ -24,49 +66,60 @@ main{max-width:640px;margin:0 auto;padding:12px 16px calc(100px + env(safe-area-
 #barOk{background:var(--ok)}
 #barBad{background:var(--bad)}
 #section{font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--muted);margin-bottom:6px}
-h1{font-size:19px;line-height:1.35;margin:0 0 6px;font-weight:600}
-#hint{font-size:14px;color:var(--muted);margin-bottom:14px}
-label{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer}
-label span{flex:1}
-input{flex:none;width:22px;height:22px;margin:1px 0 0;accent-color:var(--accent)}
-label.ok{border-color:var(--ok);background:var(--ok-bg)}
-label.bad{border-color:var(--bad);background:var(--bad-bg)}
-label.ok::after,label.bad::after{flex:none;font-weight:700}
-label.ok::after{content:"✓";color:var(--ok)}
-label.bad::after{content:"✗";color:var(--bad)}
-#result{border-radius:12px;padding:14px;margin-top:4px;font-size:15px;scroll-margin-bottom:calc(92px + env(safe-area-inset-bottom))}
-#result.ok{background:var(--ok-bg)}
-#result.bad{background:var(--bad-bg)}
-#result b{display:block;font-size:18px;margin-bottom:2px}
-#result.ok b{color:var(--ok)}
-#result.bad b{color:var(--bad)}
-#result ul{margin:6px 0 0;padding-left:20px}
-#result p{margin:8px 0 0;font-weight:600}
+.cards h1{font-size:19px;line-height:1.35;margin:0 0 6px;font-weight:600}
+.cards #hint{font-size:14px;color:var(--muted);margin-bottom:14px}
+.cards label{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer}
+.cards label span{flex:1}
+.cards label input{flex:none;width:22px;height:22px;margin:1px 0 0;accent-color:var(--accent)}
+.cards label.ok{border-color:var(--ok);background:var(--ok-bg)}
+.cards label.bad{border-color:var(--bad);background:var(--bad-bg)}
+.cards label.ok::after,.cards label.bad::after{flex:none;font-weight:700}
+.cards label.ok::after{content:"✓";color:var(--ok)}
+.cards label.bad::after{content:"✗";color:var(--bad)}
+.cards #result{border-radius:12px;padding:14px;margin-top:4px;font-size:15px;scroll-margin-bottom:calc(92px + env(safe-area-inset-bottom))}
+.cards #result.ok{background:var(--ok-bg)}
+.cards #result.bad{background:var(--bad-bg)}
+.cards #result b{display:block;font-size:18px;margin-bottom:2px}
+.cards #result.ok b{color:var(--ok)}
+.cards #result.bad b{color:var(--bad)}
+.cards #result ul{margin:6px 0 0;padding-left:20px}
+.cards #result p{margin:8px 0 0;font-weight:600}
 nav{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
 nav div{max-width:608px;margin:0 auto;display:flex;gap:10px}
-button{height:52px;border:0;border-radius:12px;font:inherit;font-weight:600;cursor:pointer}
+nav button{height:52px;border:0;border-radius:12px;font-weight:600}
 .arrow{width:56px;flex:none;background:var(--card);color:var(--text);border:1.5px solid var(--line);font-size:22px}
 #main{flex:1;background:var(--accent);color:#fff}
-button:disabled{opacity:.4;cursor:default}
 </style>
 </head>
 <body>
+<header class="x">Тренировочное тестирование</header>
 <main>
-  <div class="head"><span id="count"></span><button id="restart">Новая сессия</button></div>
-  <div class="stats">
+  <div class="c head"><span id="count"></span><span class="links"><button class="link" data-view>Вид экзамена</button><button class="link" data-restart>Новая сессия</button></span></div>
+  <div class="c stats">
     <div><b id="sDone"></b><small>Отвечено</small></div>
     <div class="ok"><b id="sOk"></b><small>Верно</small></div>
     <div class="bad"><b id="sBad"></b><small>Неверно</small></div>
     <div><b id="sLeft"></b><small>Осталось</small></div>
   </div>
-  <div class="bar"><i id="barOk"></i><i id="barBad"></i></div>
-  <div id="section"></div>
-  <h1 id="q"></h1>
-  <div id="hint"></div>
-  <div id="options"></div>
+  <div class="c bar"><i id="barOk"></i><i id="barBad"></i></div>
+  <div class="x xstats" id="xstats"></div>
+  <div class="x info"><div>Вопрос <b id="xnum"></b></div><div id="xstate"></div><div id="xgrade"></div></div>
+  <div class="box">
+    <div class="c" id="section"></div>
+    <h1 id="q"></h1>
+    <div id="hint"></div>
+    <div id="options"></div>
+    <button class="x btn" id="check">Проверить</button>
+  </div>
   <div id="result" hidden></div>
+  <div class="x pager"><button class="btn" id="xprev">Предыдущая страница</button><button class="btn" id="xnext">Следующая страница</button></div>
+  <div class="x qnav">
+    <h2>Навигация по тесту</h2>
+    <div id="grid"></div>
+    <div class="actions"><button class="btn" data-restart>Начать новую сессию</button><button class="link" data-view>Простой вид</button></div>
+  </div>
 </main>
-<nav><div>
+<nav class="c"><div>
   <button class="arrow" id="prev" aria-label="Предыдущий вопрос">←</button>
   <button id="main"></button>
   <button class="arrow" id="next" aria-label="Следующий вопрос">→</button>
@@ -74,12 +127,13 @@ button:disabled{opacity:.4;cursor:default}
 <script src="questions.js"></script>
 <script>
 const Q = window.QUESTIONS, N = Q.length, $ = s => document.querySelector(s);
+const el = (tag, props) => Object.assign(document.createElement(tag), props);
 const boxes = () => [...document.querySelectorAll('#options input')];
 const fresh = () => ({ i: 0, answers: {} }); // answers: номер вопроса → выбранные варианты
-let s;
-try { s = JSON.parse(localStorage.getItem('quiz-session')) || fresh(); } catch { s = fresh(); }
-if (!(s.i >= 0 && s.i < N) || typeof s.answers !== 'object') s = fresh();
-const save = () => { try { localStorage.setItem('quiz-session', JSON.stringify(s)); } catch {} };
+let s, view;
+try { s = JSON.parse(localStorage.getItem('quiz-session')) || fresh(); view = localStorage.getItem('quiz-view'); } catch { s = fresh(); }
+if (!s.answers || typeof s.answers !== 'object' || !(s.i >= 0 && s.i < N)) s = fresh();
+const save = () => { try { localStorage.setItem('quiz-session', JSON.stringify(s)); localStorage.setItem('quiz-view', view); } catch {} };
 
 const isRight = k => {
   const p = s.answers[k], c = Q[k].correct;
@@ -91,14 +145,27 @@ const nextUnanswered = () => {
 };
 
 function stats() {
-  const done = Object.keys(s.answers).map(Number), ok = done.filter(isRight).length;
+  const done = Object.keys(s.answers).length, ok = Object.keys(s.answers).filter(isRight).length;
   $('#count').textContent = `Вопрос ${s.i + 1} из ${N}`;
-  $('#sDone').textContent = done.length;
+  $('#sDone').textContent = done;
   $('#sOk').textContent = ok;
-  $('#sBad').textContent = done.length - ok;
-  $('#sLeft').textContent = N - done.length;
+  $('#sBad').textContent = done - ok;
+  $('#sLeft').textContent = N - done;
   $('#barOk').style.width = ok / N * 100 + '%';
-  $('#barBad').style.width = (done.length - ok) / N * 100 + '%';
+  $('#barBad').style.width = (done - ok) / N * 100 + '%';
+  $('#xstats').textContent = `Отвечено: ${done} из ${N} · Верно: ${ok} · Неверно: ${done - ok} · Осталось: ${N - done}`;
+  const a = s.answers[s.i];
+  $('#xnum').textContent = s.i + 1;
+  $('#xstate').textContent = !a ? 'Пока нет ответа' : isRight(s.i) ? 'Верно' : 'Неверно';
+  $('#xgrade').textContent = !a ? 'Макс. балл: 1,0' : `Баллов: ${isRight(s.i) ? '1,0' : '0,0'} из 1,0`;
+  let sec;
+  $('#grid').replaceChildren(...Q.flatMap((q, k) => {
+    const b = el('button', { textContent: k + 1, onclick: () => go(k) });
+    b.className = 'qn' + (k === s.i ? ' cur' : '') + (s.answers[k] ? (isRight(k) ? ' right' : ' wrong') : '');
+    if (q.section === sec) return [b];
+    sec = q.section;
+    return [el('div', { className: 'sec', textContent: sec }), b];
+  }));
 }
 
 function render() {
@@ -106,47 +173,47 @@ function render() {
   save();
   $('#section').textContent = q.section;
   $('#q').textContent = q.q;
-  $('#hint').textContent = q.multi ? 'Выберите один или несколько ответов' : 'Выберите один ответ';
+  $('#hint').textContent = q.multi ? 'Выберите один или несколько ответов:' : 'Выберите один ответ:';
   $('#options').replaceChildren(...q.options.map((o, k) => {
-    const l = document.createElement('label'), c = document.createElement('input'), t = document.createElement('span');
-    c.type = 'checkbox'; c.value = k; t.textContent = o;
-    l.append(c, t);
+    // как на экзамене: один ответ — кружки, несколько — галочки
+    const type = view === 'exam' && !q.multi ? 'radio' : 'checkbox', l = el('label');
+    l.append(el('input', { type, name: 'a', value: k }), el('span', { textContent: o }));
     return l;
   }));
   $('#result').hidden = true;
+  $('#check').hidden = false;
   $('#main').textContent = 'Ответить';
-  $('#prev').disabled = s.i === 0;
-  $('#next').disabled = s.i === N - 1;
+  $('#prev').disabled = $('#xprev').disabled = s.i === 0;
+  $('#next').disabled = $('#xnext').disabled = s.i === N - 1;
   if (s.answers[s.i]) showResult(false); else updateMain();
   stats();
   scrollTo(0, 0);
 }
 
-function updateMain() { $('#main').disabled = !s.answers[s.i] && !boxes().some(b => b.checked); }
+function updateMain() { $('#main').disabled = $('#check').disabled = !s.answers[s.i] && !boxes().some(b => b.checked); }
 
 function showResult(scroll) {
-  const q = Q[s.i], picked = s.answers[s.i], ok = isRight(s.i);
+  const q = Q[s.i], picked = s.answers[s.i], ok = isRight(s.i), r = $('#result');
+  const right = q.correct.map(k => q.options[k]), label = right.length > 1 ? 'Правильные ответы' : 'Правильный ответ';
   boxes().forEach((b, k) => {
     b.checked = picked.includes(k);
     b.disabled = true;
-    if (q.correct.includes(k)) b.parentNode.className = 'ok';
-    else if (b.checked) b.parentNode.className = 'bad';
+    b.parentNode.className = (q.correct.includes(k) ? 'ok' : b.checked ? 'bad' : '') + (b.checked ? ' picked' : '');
   });
-  const r = $('#result'), title = document.createElement('b');
-  title.textContent = ok ? 'Правильно!' : 'Неправильно';
-  r.replaceChildren(title);
-  if (!ok) {
-    const ul = document.createElement('ul');
-    ul.append(...q.correct.map(k => Object.assign(document.createElement('li'), { textContent: q.options[k] })));
-    r.append(q.correct.length > 1 ? 'Правильные ответы:' : 'Правильный ответ:', ul);
+  if (view === 'exam') r.replaceChildren(`${label}: ${right.join(', ')}`);
+  else {
+    r.replaceChildren(el('b', { textContent: ok ? 'Правильно!' : 'Неправильно' }));
+    if (!ok) {
+      const ul = el('ul');
+      ul.append(...right.map(t => el('li', { textContent: t })));
+      r.append(label + ':', ul);
+    }
   }
   const done = nextUnanswered() < 0;
-  if (done) {
-    const right = Object.keys(s.answers).filter(isRight).length;
-    r.append(Object.assign(document.createElement('p'), { textContent: `Сессия завершена: верно ${right} из ${N}` }));
-  }
+  if (done) r.append(el('p', { textContent: `Сессия завершена: верно ${Object.keys(s.answers).filter(isRight).length} из ${N}` }));
   r.className = ok ? 'ok' : 'bad';
   r.hidden = false;
+  $('#check').hidden = true;
   $('#main').textContent = done ? 'Начать новую сессию' : 'Следующий вопрос →';
   updateMain();
   if (scroll) r.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -166,20 +233,23 @@ function restart() {
 }
 
 const go = n => { s.i = n; render(); };
+const setView = v => { view = v; document.body.className = v; render(); };
 $('#options').onchange = e => {
   // в вопросах с одним ответом новая галочка снимает прежнюю
   if (!Q[s.i].multi && e.target.checked) boxes().forEach(b => b.checked = b === e.target);
   updateMain();
 };
+$('#check').onclick = answer;
 $('#main').onclick = () => {
   if (!s.answers[s.i]) return answer();
   const n = nextUnanswered();
   n < 0 ? (s = fresh(), render()) : go(n);
 };
-$('#restart').onclick = restart;
-$('#prev').onclick = () => go(s.i - 1);
-$('#next').onclick = () => go(s.i + 1);
-render();
+$('#prev').onclick = $('#xprev').onclick = () => go(s.i - 1);
+$('#next').onclick = $('#xnext').onclick = () => go(s.i + 1);
+document.querySelectorAll('[data-restart]').forEach(b => b.onclick = restart);
+document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => setView(view === 'exam' ? 'cards' : 'exam'));
+setView(view === 'cards' ? 'cards' : 'exam');
 </script>
 </body>
 </html>
