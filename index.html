@@ -274,6 +274,14 @@ $('#main').onclick = () => {
 };
 $('#prev').onclick = $('#xprev').onclick = () => go(s.i - 1);
 $('#next').onclick = $('#xnext').onclick = () => go(s.i + 1);
+document.addEventListener('keydown', e => {
+  // стрелки на клавиатуре листают вопросы; в списке тестов стрелки работают как обычно
+  if (e.altKey || e.ctrlKey || e.metaKey || e.target.tagName === 'SELECT') return;
+  const n = { ArrowLeft: s.i - 1, ArrowRight: s.i + 1 }[e.key];
+  if (n === undefined || n < 0 || n >= N) return;
+  e.preventDefault(); // иначе стрелка заодно переключит выбранный кружок-вариант
+  go(n);
+});
 document.querySelectorAll('[data-restart]').forEach(b => b.onclick = restart);
 document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => setView(view === 'exam' ? 'cards' : 'exam'));
 let stored = {};
