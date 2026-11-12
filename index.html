@@ -17,9 +17,10 @@
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
 button{font:inherit;cursor:pointer}
 button:disabled,button.off{opacity:.45;cursor:default}
-/* рамка у варианта, где фокус клавиатуры; после кликов мышью и на телефоне её нет */
+/* вариант под фокусом клавиатуры — фон чуть темнее; после кликов мышью и на телефоне выделения нет */
 @media (hover:hover) and (pointer:fine){
-  .exam label:has(input:focus-visible){outline:2px solid #0f6cbf;outline-offset:1px;border-radius:3px}
+  .exam label:has(input:focus-visible){background:#cde5ea;border-radius:3px}
+  .exam label input:focus-visible{outline:none}
   .cards label:has(input:focus-visible){border-color:var(--accent)}
 }
 main{max-width:640px;margin:0 auto;padding:12px 16px 32px}
@@ -38,7 +39,7 @@ header{position:sticky;top:0;z-index:1;background:#fff;padding:14px 16px;font-si
 .exam h1{font-size:15px;font-weight:400;margin:0}
 .exam #hint{margin:16px 0 8px}
 .exam #options{margin-left:6px}
-.exam label{display:flex;gap:10px;align-items:flex-start;padding:4px 0;cursor:pointer}
+.exam label{display:flex;gap:10px;align-items:flex-start;padding:4px 6px;margin:0 -6px;cursor:pointer}
 .exam label input{flex:none;width:16px;height:16px;margin:4px 0 0}
 .exam label span{flex:1}
 .exam label.ok::after,.exam label.bad::after{flex:none;margin-left:12px;font-weight:700}
