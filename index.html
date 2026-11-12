@@ -16,7 +16,12 @@
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
 button{font:inherit;cursor:pointer}
-button:disabled{opacity:.45;cursor:default}
+button:disabled,button.off{opacity:.45;cursor:default}
+/* рамка у варианта, где фокус клавиатуры; после кликов мышью и на телефоне её нет */
+@media (hover:hover) and (pointer:fine){
+  .exam label:has(input:focus-visible){outline:2px solid #0f6cbf;outline-offset:1px;border-radius:3px}
+  .cards label:has(input:focus-visible){border-color:var(--accent)}
+}
 main{max-width:640px;margin:0 auto;padding:12px 16px 32px}
 .exam .c,.cards .x{display:none!important}
 .pick{margin-bottom:10px}
@@ -57,8 +62,11 @@ header{position:sticky;top:0;z-index:1;background:#fff;padding:14px 16px;font-si
 .qn.wrong::after{content:"✗";background:#ca3120}
 .qn.part::after{content:"✓";background:#f0ad4e}
 .qn.cur{border:2px solid #1d2125}
+.qn.flag::before{content:"";position:absolute;top:0;right:0;border-style:solid;border-width:0 10px 10px 0;border-color:transparent #ca3120 transparent transparent}
 .actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;margin-top:24px}
 .link{background:none;border:0;padding:6px 0;color:#0f6cbf}
+.flagbtn{padding:2px 0;text-align:left}
+.flagbtn.on{color:#ca3120}
 
 /* ===== Режим «карточки» (альтернативный) ===== */
 .cards{--bg:#f4f5f7;--card:#fff;--text:#1c1d21;--muted:#6b7080;--line:#dfe2e8;--accent:#2f6fed;--ok:#1b8a4a;--ok-bg:#e6f6ec;--bad:#c93a3a;--bad-bg:#fdecec;--part:#c96a0e;--part-bg:#fdf1e3;background:var(--bg);color:var(--text);font-size:17px;line-height:1.45}
@@ -68,6 +76,8 @@ header{position:sticky;top:0;z-index:1;background:#fff;padding:14px 16px;font-si
 #count{font-weight:600;font-variant-numeric:tabular-nums}
 .head .links{display:flex;gap:14px}
 .cards .link{color:var(--accent);font-size:14px}
+.cards .flagbtn{font-size:13px}
+.cards .flagbtn.on{color:var(--bad)}
 .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:8px 0;text-align:center}
 .stats div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px 2px}
 .stats b{display:block;font-size:18px;font-variant-numeric:tabular-nums}
@@ -80,7 +90,8 @@ header{position:sticky;top:0;z-index:1;background:#fff;padding:14px 16px;font-si
 #barOk{background:var(--ok)}
 #barBad{background:var(--bad)}
 #barPart{background:var(--part)}
-#section{font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--muted);margin-bottom:6px}
+.secrow{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0 12px;margin-bottom:6px}
+#section{font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--muted)}
 .cards h1{font-size:19px;line-height:1.35;margin:0 0 6px;font-weight:600}
 .cards #hint{font-size:14px;color:var(--muted);margin-bottom:14px}
 .cards label{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer}
@@ -111,7 +122,7 @@ nav button{height:52px;border:0;border-radius:12px;font-weight:600}
 <body>
 <header class="x">Тренировочное тестирование</header>
 <main>
-  <div class="pick"><select id="test" aria-label="Выбор теста"></select></div>
+  <div class="pick"><select id="test" aria-label="Тест и сессия"></select></div>
   <div class="c head"><span id="count"></span><span class="links"><button class="link" data-view>Вид экзамена</button><button class="link" data-restart>Новая сессия</button></span></div>
   <div class="c stats">
     <div><b id="sDone"></b><small>Отвечено</small></div>
@@ -122,9 +133,9 @@ nav button{height:52px;border:0;border-radius:12px;font-weight:600}
   </div>
   <div class="c bar"><i id="barOk"></i><i id="barPart"></i><i id="barBad"></i></div>
   <div class="x xstats" id="xstats"></div>
-  <div class="x info"><div>Вопрос <b id="xnum"></b></div><div id="xstate"></div><div id="xgrade"></div></div>
+  <div class="x info"><div>Вопрос <b id="xnum"></b></div><div id="xstate"></div><div id="xgrade"></div><button class="link flagbtn" data-flag></button></div>
   <div class="box">
-    <div class="c" id="section"></div>
+    <div class="c secrow"><span id="section"></span><button class="link flagbtn" data-flag></button></div>
     <h1 id="q"></h1>
     <div id="hint"></div>
     <div id="options"></div>
@@ -148,63 +159,109 @@ nav button{height:52px;border:0;border-radius:12px;font-weight:600}
 const T = window.TESTS, $ = s => document.querySelector(s);
 const el = (tag, props) => Object.assign(document.createElement(tag), props);
 const boxes = () => [...document.querySelectorAll('#options input')];
-const fresh = () => ({ i: 0, answers: {} }); // answers: номер вопроса → выбранные варианты
-let Q, N, s, view, test;
-// у первого теста прежний ключ, чтобы не потерять уже начатую сессию
-const key = () => test ? 'quiz-session-' + T[test].id : 'quiz-session';
-function load(t) {
-  test = t; Q = T[t].questions; N = Q.length; s = null;
-  try { s = JSON.parse(localStorage.getItem(key())); } catch {}
-  if (!s || !s.answers || typeof s.answers !== 'object' || !(s.i >= 0 && s.i < N)) s = fresh();
+const readJSON = k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
+const KINDS = { all: 'все вопросы', mistakes: 'работа над ошибками', flags: 'отмеченные' };
+// right — всё верно; part — есть верный выбор, но не все верные или есть лишние; wrong — ни одного верного
+const gradeOf = (q, picked) => {
+  const hit = picked.filter(x => q.correct.includes(x)).length;
+  return hit === q.correct.length && picked.length === hit ? 'right' : hit ? 'part' : 'wrong';
+};
+// s — сессия: i — текущий вопрос, answers — номер вопроса → выбранные варианты, list — вопросы сессии (null — все)
+// p — профиль теста, живёт дольше сессий: mistakes — вопросы с последним ответом не полностью верно, flags — отмеченные
+let Q, N, ALL, s, p, view, test, kind;
+// у «2 части» прежний ключ, чтобы не потерять уже начатую сессию
+const skey = (t, k) => k !== 'all' ? `quiz-session-${T[t].id}-${k}` : T[t].id === 'part2' ? 'quiz-session' : 'quiz-session-' + T[t].id;
+const pkey = t => 'quiz-profile-' + T[t].id;
+
+function readProfile(t) {
+  const qs = T[t].questions, pr = readJSON(pkey(t));
+  const valid = a => Array.isArray(a) && a.every(k => Number.isInteger(k) && qs[k]);
+  if (pr && valid(pr.mistakes) && valid(pr.flags)) return pr;
+  // первый запуск: ошибки берём из уже начатой сессии
+  const main = readJSON(skey(t, 'all')), answers = main && typeof main.answers === 'object' && main.answers || {};
+  const mistakes = Object.keys(answers).map(Number).filter(k => qs[k] && Array.isArray(answers[k]) && gradeOf(qs[k], answers[k]) !== 'right');
+  return { mistakes, flags: [] };
+}
+const fresh = () => {
+  const list = kind === 'all' ? null : [...p[kind]].sort((a, b) => a - b);
+  return { i: list ? list[0] : 0, answers: {}, list };
+};
+function load(t, k) {
+  test = t; kind = k; Q = T[t].questions; N = Q.length; ALL = Q.map((_, n) => n);
+  p = readProfile(t);
+  s = readJSON(skey(t, k));
+  const okList = l => Array.isArray(l) && l.length && l.every(n => Q[n]);
+  if (!s || !s.answers || typeof s.answers !== 'object' || (k !== 'all' && !okList(s.list))) s = fresh();
+  if (k === 'all') s.list = null;
+  if (s.list && !s.list.length) return load(t, 'all'); // ошибок или отметок нет — открываем все вопросы
+  if (!ids().includes(s.i)) s.i = ids()[0];
 }
 const save = () => {
   try {
-    localStorage.setItem(key(), JSON.stringify(s));
+    localStorage.setItem(skey(test, kind), JSON.stringify(s));
+    localStorage.setItem(pkey(test), JSON.stringify(p));
     localStorage.setItem('quiz-view', view);
     localStorage.setItem('quiz-test', T[test].id);
+    localStorage.setItem('quiz-kind', kind);
   } catch {}
 };
 
-// right — всё верно; part — есть верный выбор, но не все верные или есть лишние; wrong — ни одного верного
-const grade = k => {
-  const p = s.answers[k], c = Q[k].correct, hit = p.filter(x => c.includes(x)).length;
-  return hit === c.length && p.length === c.length ? 'right' : hit ? 'part' : 'wrong';
-};
+const ids = () => s.list || ALL;
+const grade = k => gradeOf(Q[k], s.answers[k]);
 const rightCount = () => Object.keys(s.answers).filter(k => grade(k) === 'right').length;
 const nextUnanswered = () => {
-  for (let d = 1; d < N; d++) if (!s.answers[(s.i + d) % N]) return (s.i + d) % N;
+  const L = ids(), at = L.indexOf(s.i);
+  for (let d = 1; d < L.length; d++) if (!s.answers[L[(at + d) % L.length]]) return L[(at + d) % L.length];
   return -1;
 };
+const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const desktop = matchMedia('(hover: hover) and (pointer: fine)').matches; // есть мышь и клавиатура
+const anim = (node, frames, ms = 220) => { if (node && !still && node.animate) node.animate(frames, { duration: ms, easing: 'ease-out' }); };
+
+function fillPicker() {
+  $('#test').replaceChildren(...T.flatMap((x, t) => {
+    const pr = t === test ? p : readProfile(t);
+    return Object.entries(KINDS).map(([k, name]) => {
+      const n = k === 'all' ? x.questions.length : pr[k].length;
+      return el('option', { value: t + ':' + k, textContent: `${x.name}: ${name} (${n})`, disabled: !n && !(t === test && k === kind) });
+    });
+  }));
+  $('#test').value = test + ':' + kind;
+}
 
 function stats() {
-  const g = Object.keys(s.answers).map(grade), done = g.length;
+  const L = ids(), total = L.length, g = Object.keys(s.answers).map(grade), done = g.length;
   const [ok, part, bad] = ['right', 'part', 'wrong'].map(x => g.filter(y => y === x).length);
-  $('#count').textContent = `Вопрос ${s.i + 1} из ${N}`;
+  $('#count').textContent = s.list ? `Вопрос ${s.i + 1} · ${L.indexOf(s.i) + 1} из ${total}` : `Вопрос ${s.i + 1} из ${N}`;
   $('#sDone').textContent = done;
   $('#sOk').textContent = ok;
   $('#sPart').textContent = part;
   $('#sBad').textContent = bad;
-  $('#sLeft').textContent = N - done;
-  $('#barOk').style.width = ok / N * 100 + '%';
-  $('#barPart').style.width = part / N * 100 + '%';
-  $('#barBad').style.width = bad / N * 100 + '%';
-  $('#xstats').textContent = `Отвечено: ${done} из ${N} · Верно: ${ok} · Частично: ${part} · Неверно: ${bad} · Осталось: ${N - done}`;
-  const a = s.answers[s.i] && grade(s.i);
+  $('#sLeft').textContent = total - done;
+  $('#barOk').style.width = ok / total * 100 + '%';
+  $('#barPart').style.width = part / total * 100 + '%';
+  $('#barBad').style.width = bad / total * 100 + '%';
+  $('#xstats').textContent = `Отвечено: ${done} из ${total} · Верно: ${ok} · Частично: ${part} · Неверно: ${bad} · Осталось: ${total - done}`;
+  const a = s.answers[s.i] && grade(s.i), flagged = p.flags.includes(s.i);
   $('#xnum').textContent = s.i + 1;
   $('#xstate').textContent = { right: 'Верно', part: 'Частично правильный', wrong: 'Неверно' }[a] || 'Пока нет ответа';
   $('#xgrade').textContent = !a ? 'Макс. балл: 1,0' : `Баллов: ${a === 'right' ? '1,0' : '0,0'} из 1,0`;
+  document.querySelectorAll('[data-flag]').forEach(b => {
+    b.textContent = flagged ? '⚑ Снять отметку' : '⚑ Отметить вопрос';
+    b.classList.toggle('on', flagged);
+  });
   let sec;
-  $('#grid').replaceChildren(...Q.flatMap((q, k) => {
-    const b = el('button', { textContent: k + 1, onclick: () => go(k) });
-    b.className = 'qn' + (k === s.i ? ' cur' : '') + (s.answers[k] ? ' ' + grade(k) : '');
+  $('#grid').replaceChildren(...L.flatMap(k => {
+    const q = Q[k], b = el('button', { textContent: k + 1, onclick: () => go(k) });
+    b.className = 'qn' + (k === s.i ? ' cur' : '') + (s.answers[k] ? ' ' + grade(k) : '') + (p.flags.includes(k) ? ' flag' : '');
     if (!q.section || q.section === sec) return [b];
     sec = q.section;
     return [el('div', { className: 'sec', textContent: sec }), b];
   }));
 }
 
-function render() {
-  const q = Q[s.i];
+function render(dir) {
+  const q = Q[s.i], L = ids(), at = L.indexOf(s.i);
   save();
   $('#section').textContent = q.section;
   $('#q').textContent = q.q;
@@ -218,14 +275,23 @@ function render() {
   $('#result').hidden = true;
   $('#check').hidden = false;
   $('#main').textContent = 'Ответить';
-  $('#prev').disabled = $('#xprev').disabled = s.i === 0;
-  $('#next').disabled = $('#xnext').disabled = s.i === N - 1;
+  $('#prev').disabled = $('#xprev').disabled = at === 0;
+  $('#next').disabled = $('#xnext').disabled = at === L.length - 1;
   if (s.answers[s.i]) showResult(false); else updateMain();
   stats();
+  fillPicker();
   scrollTo(0, 0);
+  if (desktop && !s.answers[s.i]) boxes()[0].focus({ preventScroll: true }); // сразу можно отвечать стрелками и Enter
+  // новый вопрос въезжает с той стороны, куда листаем
+  if (dir) for (const n of [$('.info'), $('.box')]) anim(n, [{ opacity: 0, transform: `translateX(${dir * 24}px)` }, { opacity: 1, transform: 'none' }]);
 }
 
-function updateMain() { $('#main').disabled = $('#check').disabled = !s.answers[s.i] && !boxes().some(b => b.checked); }
+// кнопка без выбранного ответа только выглядит неактивной: так на неё можно перейти стрелками
+function updateMain() {
+  const off = !s.answers[s.i] && !boxes().some(b => b.checked);
+  $('#main').classList.toggle('off', off);
+  $('#check').classList.toggle('off', off);
+}
 
 function showResult(scroll) {
   const q = Q[s.i], picked = s.answers[s.i], g = grade(s.i), ok = g === 'right', r = $('#result');
@@ -245,7 +311,7 @@ function showResult(scroll) {
     }
   }
   const done = nextUnanswered() < 0;
-  if (done) r.append(el('p', { textContent: `Сессия завершена: верно ${rightCount()} из ${N}` }));
+  if (done) r.append(el('p', { textContent: `Сессия завершена: верно ${rightCount()} из ${ids().length}` }));
   r.className = { right: 'ok', part: 'part', wrong: 'bad' }[g];
   r.hidden = false;
   $('#check').hidden = true;
@@ -255,19 +321,45 @@ function showResult(scroll) {
 }
 
 function answer() {
+  if (!boxes().some(b => b.checked)) return;
   s.answers[s.i] = boxes().filter(b => b.checked).map(b => +b.value);
+  const g = grade(s.i);
+  // верный ответ убирает вопрос из ошибок, неверный или частичный — добавляет
+  p.mistakes = p.mistakes.filter(k => k !== s.i).concat(g === 'right' ? [] : [s.i]);
   save();
   showResult(true);
   stats();
+  fillPicker();
+  anim($('.qn.cur'), [{ transform: 'scale(1.35)' }, { transform: 'none' }], 350);
+  anim($('#result'), [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }]);
+  if (g !== 'right') navigator.vibrate?.(g === 'wrong' ? [70, 50, 70] : 60); // Android; iPhone вибрацию из браузера не даёт
+  // «Проверить» скрылась — фокус на «Следующую страницу», чтобы Enter открыл следующий вопрос
+  if (desktop && view === 'exam' && !$('#xnext').disabled) $('#xnext').focus({ preventScroll: true });
 }
 
-function restart() {
-  if (Object.keys(s.answers).length && !confirm('Начать новую сессию? Все ответы будут сброшены.')) return;
+function toggleFlag() {
+  p.flags = p.flags.includes(s.i) ? p.flags.filter(k => k !== s.i) : [...p.flags, s.i];
+  save();
+  stats();
+  fillPicker();
+}
+
+const switchTo = (t, k) => { load(t, k); render(); };
+function newSession() {
   s = fresh();
+  if (s.list && !s.list.length) {
+    alert(kind === 'mistakes' ? 'Ошибок не осталось — открываю все вопросы.' : 'Отмеченных вопросов нет — открываю все вопросы.');
+    return switchTo(test, 'all');
+  }
   render();
 }
+function restart() {
+  if (Object.keys(s.answers).length && !confirm('Начать новую сессию? Ответы этой сессии будут сброшены, ошибки и отметки сохранятся.')) return;
+  newSession();
+}
 
-const go = n => { s.i = n; render(); };
+const go = n => { const L = ids(), d = Math.sign(L.indexOf(n) - L.indexOf(s.i)); s.i = n; render(d); };
+const step = d => { const L = ids(), n = L[L.indexOf(s.i) + d]; if (n !== undefined) go(n); };
 const setView = v => { view = v; document.body.className = v; render(); };
 $('#options').onchange = e => {
   // в вопросах с одним ответом новая галочка снимает прежнюю
@@ -278,27 +370,52 @@ $('#check').onclick = answer;
 $('#main').onclick = () => {
   if (!s.answers[s.i]) return answer();
   const n = nextUnanswered();
-  n < 0 ? (s = fresh(), render()) : go(n);
+  n < 0 ? newSession() : go(n);
 };
-$('#prev').onclick = $('#xprev').onclick = () => go(s.i - 1);
-$('#next').onclick = $('#xnext').onclick = () => go(s.i + 1);
+$('#prev').onclick = $('#xprev').onclick = () => step(-1);
+$('#next').onclick = $('#xnext').onclick = () => step(1);
 document.addEventListener('keydown', e => {
   // стрелки на клавиатуре листают вопросы; в списке тестов стрелки работают как обычно
   if (e.altKey || e.ctrlKey || e.metaKey || e.target.tagName === 'SELECT') return;
-  const n = { ArrowLeft: s.i - 1, ArrowRight: s.i + 1 }[e.key];
-  if (n === undefined || n < 0 || n >= N) return;
+  // ↑ ↓ ходят по кругу: варианты → «Проверить» → первый вариант; после ответа стрелки снова прокручивают страницу
+  const cycle = [...boxes().filter(b => !b.disabled), view === 'exam' ? $('#check') : $('#main')];
+  if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && cycle.length > 1) {
+    const at = cycle.indexOf(document.activeElement), dv = e.key === 'ArrowDown' ? 1 : -1;
+    e.preventDefault();
+    cycle[at < 0 ? 0 : (at + dv + cycle.length) % cycle.length].focus();
+    return;
+  }
+  if (e.key === 'Enter' && e.target.matches('#options input')) { // Enter отмечает или снимает вариант
+    e.preventDefault();
+    e.target.click();
+    return;
+  }
+  const d = { ArrowLeft: -1, ArrowRight: 1 }[e.key];
+  if (!d) return;
   e.preventDefault(); // иначе стрелка заодно переключит выбранный кружок-вариант
-  go(n);
+  step(d);
 });
+// свайп влево — следующий вопрос, вправо — предыдущий; вертикальная прокрутка не мешает
+let touch = null;
+document.addEventListener('touchstart', e => {
+  touch = e.touches.length === 1 && !e.target.closest('select') ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+}, { passive: true });
+document.addEventListener('touchend', e => {
+  if (!touch) return;
+  const t = e.changedTouches[0], dx = t.clientX - touch.x, dy = t.clientY - touch.y;
+  touch = null;
+  if (Math.abs(dx) > 60 && Math.abs(dx) > 2 * Math.abs(dy)) step(dx < 0 ? 1 : -1);
+}, { passive: true });
+document.querySelectorAll('[data-flag]').forEach(b => b.onclick = toggleFlag);
 document.querySelectorAll('[data-restart]').forEach(b => b.onclick = restart);
 document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => setView(view === 'exam' ? 'cards' : 'exam'));
+$('#test').onchange = e => { const [t, k] = e.target.value.split(':'); switchTo(+t, k); };
+
 let stored = {};
-try { stored = { view: localStorage.getItem('quiz-view'), test: localStorage.getItem('quiz-test') }; } catch {}
-load(Math.max(0, T.findIndex(x => x.id === stored.test)));
-$('#test').append(...T.map((x, k) => el('option', { value: k, textContent: `${x.name} — вопросов: ${x.questions.length}` })));
-$('#test').value = test;
-$('#test').onchange = e => { load(+e.target.value); render(); };
-setView(stored.view === 'cards' ? 'cards' : 'exam');
+try { stored = { view: localStorage.getItem('quiz-view'), test: localStorage.getItem('quiz-test'), kind: localStorage.getItem('quiz-kind') }; } catch {}
+view = stored.view === 'cards' ? 'cards' : 'exam';
+load(Math.max(0, T.findIndex(x => x.id === stored.test)), Object.hasOwn(KINDS, stored.kind) ? stored.kind : 'all');
+setView(view);
 // приложение на экране «Домой» и без интернета; просим браузер не стирать сохранённый прогресс
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 navigator.storage?.persist?.().catch(() => {});
