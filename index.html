@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Тест — 2 часть</title>
+<title>Тренировочное тестирование</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
@@ -11,6 +11,9 @@ button{font:inherit;cursor:pointer}
 button:disabled{opacity:.45;cursor:default}
 main{max-width:640px;margin:0 auto;padding:12px 16px 32px}
 .exam .c,.cards .x{display:none!important}
+.pick{margin-bottom:10px}
+.pick select{width:100%;font:inherit;padding:7px 8px;border:1px solid #8f959e;border-radius:4px;background:#fff;color:#1d2125}
+.cards .pick select{font-size:15px;border:1.5px solid var(--line);border-radius:10px;background:var(--card);color:var(--text)}
 
 /* ===== Режим «как на экзамене» (основной) ===== */
 .exam{background:#fff;color:#1d2125;font-size:15px;line-height:1.5}
@@ -94,6 +97,7 @@ nav button{height:52px;border:0;border-radius:12px;font-weight:600}
 <body>
 <header class="x">Тренировочное тестирование</header>
 <main>
+  <div class="pick"><select id="test" aria-label="Выбор теста"></select></div>
   <div class="c head"><span id="count"></span><span class="links"><button class="link" data-view>Вид экзамена</button><button class="link" data-restart>Новая сессия</button></span></div>
   <div class="c stats">
     <div><b id="sDone"></b><small>Отвечено</small></div>
@@ -126,14 +130,25 @@ nav button{height:52px;border:0;border-radius:12px;font-weight:600}
 </div></nav>
 <script src="questions.js"></script>
 <script>
-const Q = window.QUESTIONS, N = Q.length, $ = s => document.querySelector(s);
+const T = window.TESTS, $ = s => document.querySelector(s);
 const el = (tag, props) => Object.assign(document.createElement(tag), props);
 const boxes = () => [...document.querySelectorAll('#options input')];
 const fresh = () => ({ i: 0, answers: {} }); // answers: номер вопроса → выбранные варианты
-let s, view;
-try { s = JSON.parse(localStorage.getItem('quiz-session')) || fresh(); view = localStorage.getItem('quiz-view'); } catch { s = fresh(); }
-if (!s.answers || typeof s.answers !== 'object' || !(s.i >= 0 && s.i < N)) s = fresh();
-const save = () => { try { localStorage.setItem('quiz-session', JSON.stringify(s)); localStorage.setItem('quiz-view', view); } catch {} };
+let Q, N, s, view, test;
+// у первого теста прежний ключ, чтобы не потерять уже начатую сессию
+const key = () => test ? 'quiz-session-' + T[test].id : 'quiz-session';
+function load(t) {
+  test = t; Q = T[t].questions; N = Q.length; s = null;
+  try { s = JSON.parse(localStorage.getItem(key())); } catch {}
+  if (!s || !s.answers || typeof s.answers !== 'object' || !(s.i >= 0 && s.i < N)) s = fresh();
+}
+const save = () => {
+  try {
+    localStorage.setItem(key(), JSON.stringify(s));
+    localStorage.setItem('quiz-view', view);
+    localStorage.setItem('quiz-test', T[test].id);
+  } catch {}
+};
 
 const isRight = k => {
   const p = s.answers[k], c = Q[k].correct;
@@ -162,7 +177,7 @@ function stats() {
   $('#grid').replaceChildren(...Q.flatMap((q, k) => {
     const b = el('button', { textContent: k + 1, onclick: () => go(k) });
     b.className = 'qn' + (k === s.i ? ' cur' : '') + (s.answers[k] ? (isRight(k) ? ' right' : ' wrong') : '');
-    if (q.section === sec) return [b];
+    if (!q.section || q.section === sec) return [b];
     sec = q.section;
     return [el('div', { className: 'sec', textContent: sec }), b];
   }));
@@ -249,7 +264,13 @@ $('#prev').onclick = $('#xprev').onclick = () => go(s.i - 1);
 $('#next').onclick = $('#xnext').onclick = () => go(s.i + 1);
 document.querySelectorAll('[data-restart]').forEach(b => b.onclick = restart);
 document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => setView(view === 'exam' ? 'cards' : 'exam'));
-setView(view === 'cards' ? 'cards' : 'exam');
+let stored = {};
+try { stored = { view: localStorage.getItem('quiz-view'), test: localStorage.getItem('quiz-test') }; } catch {}
+load(Math.max(0, T.findIndex(x => x.id === stored.test)));
+$('#test').append(...T.map((x, k) => el('option', { value: k, textContent: `${x.name} — вопросов: ${x.questions.length}` })));
+$('#test').value = test;
+$('#test').onchange = e => { load(+e.target.value); render(); };
+setView(stored.view === 'cards' ? 'cards' : 'exam');
 </script>
 </body>
 </html>
