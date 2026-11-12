@@ -46,28 +46,31 @@ header{position:sticky;top:0;z-index:1;background:#fff;padding:14px 16px;font-si
 .qn::after{content:"";position:absolute;left:0;right:0;bottom:0;height:12px;border-top:1px solid #8f959e;font-size:9px;line-height:11px;color:#fff}
 .qn.right::after{content:"✓";background:#357a32}
 .qn.wrong::after{content:"✗";background:#ca3120}
+.qn.part::after{content:"✓";background:#f0ad4e}
 .qn.cur{border:2px solid #1d2125}
 .actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;margin-top:24px}
 .link{background:none;border:0;padding:6px 0;color:#0f6cbf}
 
 /* ===== Режим «карточки» (альтернативный) ===== */
-.cards{--bg:#f4f5f7;--card:#fff;--text:#1c1d21;--muted:#6b7080;--line:#dfe2e8;--accent:#2f6fed;--ok:#1b8a4a;--ok-bg:#e6f6ec;--bad:#c93a3a;--bad-bg:#fdecec;background:var(--bg);color:var(--text);font-size:17px;line-height:1.45}
-@media (prefers-color-scheme:dark){.cards{--bg:#121316;--card:#1d1f24;--text:#eceef3;--muted:#9aa0ae;--line:#30333b;--accent:#5b8ef5;--ok:#5ccf8b;--ok-bg:#15301f;--bad:#f27b7b;--bad-bg:#3a1c1c}}
+.cards{--bg:#f4f5f7;--card:#fff;--text:#1c1d21;--muted:#6b7080;--line:#dfe2e8;--accent:#2f6fed;--ok:#1b8a4a;--ok-bg:#e6f6ec;--bad:#c93a3a;--bad-bg:#fdecec;--part:#c96a0e;--part-bg:#fdf1e3;background:var(--bg);color:var(--text);font-size:17px;line-height:1.45}
+@media (prefers-color-scheme:dark){.cards{--bg:#121316;--card:#1d1f24;--text:#eceef3;--muted:#9aa0ae;--line:#30333b;--accent:#5b8ef5;--ok:#5ccf8b;--ok-bg:#15301f;--bad:#f27b7b;--bad-bg:#3a1c1c;--part:#f0a35e;--part-bg:#3a2a17}}
 .cards main{padding-bottom:calc(100px + env(safe-area-inset-bottom))}
 .head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0 12px;font-size:15px}
 #count{font-weight:600;font-variant-numeric:tabular-nums}
 .head .links{display:flex;gap:14px}
 .cards .link{color:var(--accent);font-size:14px}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0;text-align:center}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:8px 0;text-align:center}
 .stats div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px 2px}
 .stats b{display:block;font-size:18px;font-variant-numeric:tabular-nums}
 .stats small{font-size:11px;color:var(--muted)}
 .stats .ok b{color:var(--ok)}
 .stats .bad b{color:var(--bad)}
+.stats .part b{color:var(--part)}
 .bar{display:flex;height:6px;background:var(--line);border-radius:3px;margin-bottom:16px;overflow:hidden}
 .bar i{transition:width .2s}
 #barOk{background:var(--ok)}
 #barBad{background:var(--bad)}
+#barPart{background:var(--part)}
 #section{font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--muted);margin-bottom:6px}
 .cards h1{font-size:19px;line-height:1.35;margin:0 0 6px;font-weight:600}
 .cards #hint{font-size:14px;color:var(--muted);margin-bottom:14px}
@@ -85,6 +88,8 @@ header{position:sticky;top:0;z-index:1;background:#fff;padding:14px 16px;font-si
 .cards #result b{display:block;font-size:18px;margin-bottom:2px}
 .cards #result.ok b{color:var(--ok)}
 .cards #result.bad b{color:var(--bad)}
+.cards #result.part{background:var(--part-bg)}
+.cards #result.part b{color:var(--part)}
 .cards #result ul{margin:6px 0 0;padding-left:20px}
 .cards #result p{margin:8px 0 0;font-weight:600}
 nav{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
@@ -102,10 +107,11 @@ nav button{height:52px;border:0;border-radius:12px;font-weight:600}
   <div class="c stats">
     <div><b id="sDone"></b><small>Отвечено</small></div>
     <div class="ok"><b id="sOk"></b><small>Верно</small></div>
+    <div class="part"><b id="sPart"></b><small>Частично</small></div>
     <div class="bad"><b id="sBad"></b><small>Неверно</small></div>
     <div><b id="sLeft"></b><small>Осталось</small></div>
   </div>
-  <div class="c bar"><i id="barOk"></i><i id="barBad"></i></div>
+  <div class="c bar"><i id="barOk"></i><i id="barPart"></i><i id="barBad"></i></div>
   <div class="x xstats" id="xstats"></div>
   <div class="x info"><div>Вопрос <b id="xnum"></b></div><div id="xstate"></div><div id="xgrade"></div></div>
   <div class="box">
@@ -150,33 +156,38 @@ const save = () => {
   } catch {}
 };
 
-const isRight = k => {
-  const p = s.answers[k], c = Q[k].correct;
-  return p.length === c.length && p.every(x => c.includes(x));
+// right — всё верно; part — есть верный выбор, но не все верные или есть лишние; wrong — ни одного верного
+const grade = k => {
+  const p = s.answers[k], c = Q[k].correct, hit = p.filter(x => c.includes(x)).length;
+  return hit === c.length && p.length === c.length ? 'right' : hit ? 'part' : 'wrong';
 };
+const rightCount = () => Object.keys(s.answers).filter(k => grade(k) === 'right').length;
 const nextUnanswered = () => {
   for (let d = 1; d < N; d++) if (!s.answers[(s.i + d) % N]) return (s.i + d) % N;
   return -1;
 };
 
 function stats() {
-  const done = Object.keys(s.answers).length, ok = Object.keys(s.answers).filter(isRight).length;
+  const g = Object.keys(s.answers).map(grade), done = g.length;
+  const [ok, part, bad] = ['right', 'part', 'wrong'].map(x => g.filter(y => y === x).length);
   $('#count').textContent = `Вопрос ${s.i + 1} из ${N}`;
   $('#sDone').textContent = done;
   $('#sOk').textContent = ok;
-  $('#sBad').textContent = done - ok;
+  $('#sPart').textContent = part;
+  $('#sBad').textContent = bad;
   $('#sLeft').textContent = N - done;
   $('#barOk').style.width = ok / N * 100 + '%';
-  $('#barBad').style.width = (done - ok) / N * 100 + '%';
-  $('#xstats').textContent = `Отвечено: ${done} из ${N} · Верно: ${ok} · Неверно: ${done - ok} · Осталось: ${N - done}`;
-  const a = s.answers[s.i];
+  $('#barPart').style.width = part / N * 100 + '%';
+  $('#barBad').style.width = bad / N * 100 + '%';
+  $('#xstats').textContent = `Отвечено: ${done} из ${N} · Верно: ${ok} · Частично: ${part} · Неверно: ${bad} · Осталось: ${N - done}`;
+  const a = s.answers[s.i] && grade(s.i);
   $('#xnum').textContent = s.i + 1;
-  $('#xstate').textContent = !a ? 'Пока нет ответа' : isRight(s.i) ? 'Верно' : 'Неверно';
-  $('#xgrade').textContent = !a ? 'Макс. балл: 1,0' : `Баллов: ${isRight(s.i) ? '1,0' : '0,0'} из 1,0`;
+  $('#xstate').textContent = { right: 'Верно', part: 'Частично правильный', wrong: 'Неверно' }[a] || 'Пока нет ответа';
+  $('#xgrade').textContent = !a ? 'Макс. балл: 1,0' : `Баллов: ${a === 'right' ? '1,0' : '0,0'} из 1,0`;
   let sec;
   $('#grid').replaceChildren(...Q.flatMap((q, k) => {
     const b = el('button', { textContent: k + 1, onclick: () => go(k) });
-    b.className = 'qn' + (k === s.i ? ' cur' : '') + (s.answers[k] ? (isRight(k) ? ' right' : ' wrong') : '');
+    b.className = 'qn' + (k === s.i ? ' cur' : '') + (s.answers[k] ? ' ' + grade(k) : '');
     if (!q.section || q.section === sec) return [b];
     sec = q.section;
     return [el('div', { className: 'sec', textContent: sec }), b];
@@ -208,7 +219,7 @@ function render() {
 function updateMain() { $('#main').disabled = $('#check').disabled = !s.answers[s.i] && !boxes().some(b => b.checked); }
 
 function showResult(scroll) {
-  const q = Q[s.i], picked = s.answers[s.i], ok = isRight(s.i), r = $('#result');
+  const q = Q[s.i], picked = s.answers[s.i], g = grade(s.i), ok = g === 'right', r = $('#result');
   const right = q.correct.map(k => q.options[k]), label = right.length > 1 ? 'Правильные ответы' : 'Правильный ответ';
   boxes().forEach((b, k) => {
     b.checked = picked.includes(k);
@@ -217,7 +228,7 @@ function showResult(scroll) {
   });
   if (view === 'exam') r.replaceChildren(`${label}: ${right.join(', ')}`);
   else {
-    r.replaceChildren(el('b', { textContent: ok ? 'Правильно!' : 'Неправильно' }));
+    r.replaceChildren(el('b', { textContent: { right: 'Правильно!', part: 'Частично правильно', wrong: 'Неправильно' }[g] }));
     if (!ok) {
       const ul = el('ul');
       ul.append(...right.map(t => el('li', { textContent: t })));
@@ -225,8 +236,8 @@ function showResult(scroll) {
     }
   }
   const done = nextUnanswered() < 0;
-  if (done) r.append(el('p', { textContent: `Сессия завершена: верно ${Object.keys(s.answers).filter(isRight).length} из ${N}` }));
-  r.className = ok ? 'ok' : 'bad';
+  if (done) r.append(el('p', { textContent: `Сессия завершена: верно ${rightCount()} из ${N}` }));
+  r.className = { right: 'ok', part: 'part', wrong: 'bad' }[g];
   r.hidden = false;
   $('#check').hidden = true;
   $('#main').textContent = done ? 'Начать новую сессию' : 'Следующий вопрос →';
