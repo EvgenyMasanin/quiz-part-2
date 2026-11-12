@@ -28,8 +28,9 @@ header{position:sticky;top:0;z-index:1;background:#fff;padding:14px 16px;font-si
 .exam label{display:flex;gap:10px;align-items:flex-start;padding:4px 0;cursor:pointer}
 .exam label input{flex:none;width:16px;height:16px;margin:4px 0 0}
 .exam label span{flex:1}
-.exam label.ok.picked::after,.exam label.bad::after{flex:none;margin-left:12px;font-weight:700}
-.exam label.ok.picked::after{content:"✓";color:#357a32}
+.exam label.ok::after,.exam label.bad::after{flex:none;margin-left:12px;font-weight:700}
+.exam label.ok::after{content:"✓";color:#357a32}
+.exam label.ok:not(.picked)::after{content:"✓ пропущен";color:#b45309;font-size:13px;white-space:nowrap}
 .exam label.bad::after{content:"✗";color:#ca3120}
 .btn{border:0;border-radius:4px;padding:7px 14px;color:#fff;background:#6c757d}
 .exam #check{margin-top:12px}
