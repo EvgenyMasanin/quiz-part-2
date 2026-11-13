@@ -40,7 +40,7 @@ header{position:sticky;top:0;z-index:1;background:#fff;padding:14px 16px;font-si
 .exam h1{font-size:15px;font-weight:400;margin:0}
 .exam #hint{margin:16px 0 8px}
 .exam #options{margin-left:6px}
-.exam label{display:flex;gap:10px;align-items:flex-start;padding:4px 6px;margin:0 -6px;cursor:pointer}
+.exam label{display:flex;gap:10px;align-items:flex-start;padding:4px 6px;margin:0 -6px;border-radius:3px;cursor:pointer}
 .exam label input{flex:none;width:16px;height:16px;margin:4px 0 0}
 .exam label span{flex:1}
 .exam label:has(input:checked) span{font-weight:600}
@@ -335,6 +335,8 @@ function answer() {
   fillPicker();
   anim($('.qn.cur'), [{ transform: 'scale(1.35)' }, { transform: 'none' }], 350);
   anim($('#result'), [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }]);
+  // верные варианты вспыхивают зелёным и гаснут — чтобы запомнилось, где был ответ
+  document.querySelectorAll('#options label.ok').forEach(l => anim(l, [{ backgroundColor: 'rgba(53,122,50,.28)', offset: 0 }], 1000));
   if (g !== 'right') navigator.vibrate?.(g === 'wrong' ? [70, 50, 70] : 60); // Android; iPhone вибрацию из браузера не даёт
   // «Проверить» скрылась — фокус на «Следующую страницу», чтобы Enter открыл следующий вопрос
   if (desktop && view === 'exam' && !$('#xnext').disabled) $('#xnext').focus({ preventScroll: true });
