@@ -49,7 +49,7 @@ header{position:sticky;top:0;z-index:1;background:#fff;padding:14px 16px;font-si
 .exam label.ok:not(.picked)::after{content:"✓ пропущен";color:#b45309;font-size:13px;white-space:nowrap}
 .exam label.bad::after{content:"✗";color:#ca3120}
 .btn{border:0;border-radius:4px;padding:7px 14px;color:#fff;background:#6c757d}
-.exam #check{margin-top:12px}
+.exam #check,.exam #retry{margin-top:12px}
 .exam #result{background:#fcefdc;border:1px solid #fbe6ca;color:#8e662e;border-radius:4px;padding:20px;margin-top:16px}
 .exam #result p{margin:8px 0 0;font-weight:600}
 .pager{display:flex;margin-top:28px}
@@ -96,6 +96,7 @@ header{position:sticky;top:0;z-index:1;background:#fff;padding:14px 16px;font-si
 .secrow{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0 12px;margin-bottom:6px}
 #section{font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--muted)}
 .cards h1{font-size:19px;line-height:1.35;margin:0 0 6px;font-weight:600}
+.cards #retry{width:100%;margin-top:4px;padding:12px;border:1.5px solid var(--line);border-radius:12px;background:var(--card);color:var(--text);font-weight:600}
 .cards #hint{font-size:14px;color:var(--muted);margin-bottom:14px}
 .cards label{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer}
 .cards label span{flex:1}
@@ -143,6 +144,7 @@ nav button{height:52px;border:0;border-radius:12px;font-weight:600}
     <div id="hint"></div>
     <div id="options"></div>
     <button class="x btn" id="check">Проверить</button>
+    <button class="btn" id="retry" hidden>Перерешать</button>
   </div>
   <div id="result" hidden></div>
   <div class="x pager"><button class="btn" id="xprev">Предыдущая страница</button><button class="btn" id="xnext">Следующая страница</button></div>
@@ -275,7 +277,7 @@ function render(dir) {
     l.append(el('input', { type, name: 'a', value: k }), el('span', { textContent: o }));
     return l;
   }));
-  $('#result').hidden = true;
+  $('#result').hidden = $('#retry').hidden = true;
   $('#check').hidden = false;
   $('#main').textContent = 'Ответить';
   $('#prev').disabled = $('#xprev').disabled = at === 0;
@@ -316,7 +318,7 @@ function showResult(scroll) {
   const done = nextUnanswered() < 0;
   if (done) r.append(el('p', { textContent: `Сессия завершена: верно ${rightCount()} из ${ids().length}` }));
   r.className = { right: 'ok', part: 'part', wrong: 'bad' }[g];
-  r.hidden = false;
+  r.hidden = $('#retry').hidden = false;
   $('#check').hidden = true;
   $('#main').textContent = done ? 'Начать новую сессию' : 'Следующий вопрос →';
   updateMain();
@@ -372,6 +374,8 @@ $('#options').onchange = e => {
   updateMain();
 };
 $('#check').onclick = answer;
+// перерешать один вопрос: его ответ стирается, остальная сессия не трогается; ошибки обновятся при новом ответе
+$('#retry').onclick = () => { delete s.answers[s.i]; render(); };
 $('#main').onclick = () => {
   if (!s.answers[s.i]) return answer();
   const n = nextUnanswered();
